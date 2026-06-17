@@ -14,6 +14,8 @@ from config import Config, ConfigVal
 
 from const import WINDOW_SIZE_X, WINDOW_SIZE_Y
 
+_g_ui_widget = None
+
 _g_scaling_factor = 1
 def update_scaling_factor(app: QtWidgets.QApplication):
     global _g_scaling_factor
@@ -136,6 +138,49 @@ class QEditConfigWidget(QWidget):
 
     def update(self):
         super().update()
+
+class QUIBarWidget(QWidget):
+    SIZE = (150, 100)
+
+    def __init__(self, parent_window):
+        QWidget.__init__(self)
+
+        self.config_edit_popup = None
+
+        self.parent_window = parent_window
+
+        self.setAttribute(Qt.WA_StyledBackground)
+        self.setAutoFillBackground(True)
+
+        vbox = QtWidgets.QFormLayout()
+
+        self.text_label = QtWidgets.QLabel("...")
+        vbox.addWidget(self.text_label)
+
+        self.edit_config_button = QtWidgets.QPushButton("Edit Settings")
+        self.edit_config_button.clicked.connect(self.on_edit_config)
+        vbox.addWidget(self.edit_config_button)
+
+        self.setLayout(vbox)
+
+        set_target_size(self)
+
+        global _g_ui_widget
+        _g_ui_widget = self
+
+    def update(self):
+        super().update()
+
+    @pyqtSlot()
+    def on_edit_config(self):
+        self.parent_window.toggle_edit_config()
+
+    def set_text(self, text: str):
+        self.text_label.setText(text)
+
+def get_ui() -> QUIBarWidget:
+    return _g_ui_widget
+
 class QRSVWindow(QtWidgets.QMainWindow):
     def __init__(self, gl_widget):
         super().__init__()
@@ -150,6 +195,9 @@ class QRSVWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.gl_widget)
 
         self.base_layout = QtWidgets.QVBoxLayout(self)
+
+        self.bar_widget = QUIBarWidget(self)
+        self.layout().addWidget(self.bar_widget)
 
         self.edit_config_widget = QEditConfigWidget(self.gl_widget.config)
         self.layout().addWidget(self.edit_config_widget)

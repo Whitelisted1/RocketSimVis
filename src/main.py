@@ -15,7 +15,7 @@ from state_manager import *
 from ribbon import *
 from outline_renderer import OutlineRenderer
 import ui
-from ui import QRSVWindow
+from ui import get_ui, QUIBarWidget, QRSVWindow
 from config import Config, ConfigVal
 
 import moderngl
@@ -548,6 +548,14 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
             self.ctx.enable(moderngl.DEPTH_TEST)
 
         ###########################################
+
+        ui_text = ""
+        ui_text += "Render FPS: {}".format(self.last_fps) + "\n"
+        ui_text += "Connected: {}".format(state.recv_time > 0) + "\n"
+        if state.recv_interval > 0:
+            ui_text += "Network rate: {:.2f}fps".format(1 / state.recv_interval) + "\n"
+        ui_text += "Ball speed: {:.2f}kph".format(state.ball_state.prev_vel.length * (9 / 250)) + "\n"
+        get_ui().set_text(ui_text)
 
         ###########################################
 
