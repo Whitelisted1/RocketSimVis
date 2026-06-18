@@ -503,13 +503,16 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
                     if car_state.phys.is_teleporting():
                         car_ribbon.points.clear()
 
+                    BLUE_COLOR   = [*(c/255 for c in [100, 130, 170]), 0.7]
+                    ORANGE_COLOR = [*(c/255 for c in [200, 140, 100]), 0.7]
+
                     self.render_ribbon(
                         car_ribbon,
                         camera_pos,
                         RIBBON_LIFETIME,
                         20,
                         RIBBON_LIFETIME / 10,
-                        Vector4((1, 0.9, 0.4, 1))
+                        Vector4(BLUE_COLOR if car_state.team_num == 0 else ORANGE_COLOR)
                     )
 
         ###########################################
