@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QSize, Qt, QTimer, QRect
-from PyQt5.QtGui import QFont, QFontDatabase, QPen, QColor
+from PyQt5.QtCore import QRectF, QSize, Qt, QTimer, QRect
+from PyQt5.QtGui import QFont, QFontDatabase, QPainterPath, QPen, QColor, QRegion
 from PyQt5.Qt import QPainter, QWidget, pyqtSlot, QEvent
 
 from config import Config, ConfigVal
@@ -178,8 +178,8 @@ class QUIBoostWidget(QWidget):
     ACTUAL_FRAME_RATE = 1000 / round(1000 / FRAME_RATE)
     BOOST_USAGE_PER_FRAME = (100 / 3) / ACTUAL_FRAME_RATE
 
-    ORANGE_COLOR = QColor(255, 0, 0)
-    BLUE_COLOR = QColor(0, 0, 255)
+    BLUE_COLOR = QColor(10, 40, 170)
+    ORANGE_COLOR = QColor(200, 70, 50)
 
     def __init__(self):
         QWidget.__init__(self)
@@ -221,6 +221,7 @@ class QUIBoostWidget(QWidget):
         painter = QPainter(self)
         painter.eraseRect(self.rect())
         painter.setRenderHint(QPainter.Antialiasing)
+        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, 10, 600))
 
         self.update_display_boost()
 
@@ -229,7 +230,6 @@ class QUIBoostWidget(QWidget):
 
             pen = QPen(QColor(255, 255, 255))
             pen.setWidth(4)
-            painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, 10, 600))
             painter.setPen(pen)
             painter.setBrush(QColor(255, 255, 255))
 
@@ -244,6 +244,64 @@ class QUIBoostWidget(QWidget):
 
             painter.setPen(QColor(255, 255, 255))
             painter.drawText(QRect(0, 10 + i * 30, text_width, 20), Qt.AlignCenter, f"{round(car.boost_amount*100)}")
+
+class QUIScoreWidget(QWidget):
+    BLUE_BACKGROUND_COLOR = QColor(32, 38, 87)
+    BLUE_TEXT_COLOR = QColor(113, 171, 243)
+    ORANGE_BACKGROUND_COLOR = QColor(89, 45, 39)
+    ORANGE_TEXT_COLOR = QColor(243, 171, 113)
+
+    TIMER_COLOR = QColor(255, 255, 255)
+
+    def __init__(self):
+        QWidget.__init__(self)
+
+        self.blue_score = 0
+        self.orange_score = 0
+
+    def do_resize(self, screen_width: int, screen_height: int):
+        self.resize(400, 100)
+
+        # Round the widget
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(self.rect()), 15, 15)
+        mask = QRegion(path.toFillPolygon().toPolygon())
+        self.setMask(mask)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.eraseRect(self.rect())
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        pen = QPen()
+        pen.setWidth(4)
+        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, 32, 600))
+        painter.setPen(pen)
+
+        score_width = round(self.width() / 4)
+
+        # Blue score
+        painter.setPen(QUIScoreWidget.BLUE_BACKGROUND_COLOR)
+        painter.setBrush(QUIScoreWidget.BLUE_BACKGROUND_COLOR)
+        rect = QRect(0, 0, score_width, self.height())
+        painter.drawRect(rect)
+        painter.setPen(QUIScoreWidget.BLUE_TEXT_COLOR)
+        painter.drawText(rect, Qt.AlignCenter, "0")
+
+        # Orange score
+        painter.setPen(QUIScoreWidget.ORANGE_BACKGROUND_COLOR)
+        painter.setBrush(QUIScoreWidget.ORANGE_BACKGROUND_COLOR)
+        rect = QRect(score_width*3, 0, score_width, self.height())
+        painter.drawRect(rect)
+        painter.setPen(QUIScoreWidget.ORANGE_TEXT_COLOR)
+        painter.drawText(rect, Qt.AlignCenter, "0")
+
+        # Timer
+        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, 24, 400))
+        painter.setPen(QUIScoreWidget.TIMER_COLOR)
+        painter.setBrush(QUIScoreWidget.TIMER_COLOR)
+        rect = QRect(score_width, 0, score_width*2, self.height())
+        painter.drawText(rect, Qt.AlignCenter, "5:00")
 
 class QRSVWindow(QtWidgets.QMainWindow):
     _instance: "QRSVWindow" = None
@@ -279,6 +337,9 @@ class QRSVWindow(QtWidgets.QMainWindow):
         self.boost_widget = QUIBoostWidget()
         self.layout().addWidget(self.boost_widget)
 
+        self.score_widget = QUIScoreWidget()
+        self.layout().addWidget(self.score_widget)
+
         self.resize(WINDOW_SIZE_X, WINDOW_SIZE_Y)
 
         self.installEventFilter(self)
@@ -286,7 +347,7 @@ class QRSVWindow(QtWidgets.QMainWindow):
 
         QRSVWindow._instance = self
 
-    def position_bottom_right(self, widget):
+    def position_bottom_right(self, widget: QWidget):
         screen = self.geometry()
 
         x = screen.width() - widget.width()
@@ -294,10 +355,21 @@ class QRSVWindow(QtWidgets.QMainWindow):
 
         widget.move(x, y)
     
+    def position_top_center(self, widget: QWidget):
+        screen = self.geometry()
+
+        x = screen.width() / 2 - widget.width() / 2
+        widget.move(round(x), 20)
+    
     def resizeEvent(self, event):
         screen = self.geometry()
+
         self.boost_widget.do_resize(screen.width(), screen.height())
         self.position_bottom_right(self.boost_widget)
+
+        self.score_widget.do_resize(screen.width(), screen.height())
+        self.position_top_center(self.score_widget)
+
         super().resizeEvent(event)
 
     def eventFilter(self, obj, event):
