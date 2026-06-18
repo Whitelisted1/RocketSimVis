@@ -233,18 +233,17 @@ class QUIBoostWidget(QWidget):
             painter.setPen(pen)
             painter.setBrush(QColor(255, 255, 255))
 
-            text_width = 30
+            text_width = 50
 
-            rect = QRect(30 + text_width, 10 + i * 30, self.width() - 40 - text_width, 20)
+            rect = QRect(text_width, 10 + i * 30, self.width() - text_width - 10, 20)
             painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
 
             painter.setBrush(color)
             rect.setWidth(round(rect.width() * self.display_boosts[i] / 100))
             painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
 
-            # Draw text centered on the full bar
-            painter.setPen(QColor(255, 255, 255))  # white text
-            painter.drawText(QRect(10, 10 + i * 30, text_width + 10, 20), Qt.AlignCenter, f"{round(car.boost_amount*100)}")
+            painter.setPen(QColor(255, 255, 255))
+            painter.drawText(QRect(0, 10 + i * 30, text_width, 20), Qt.AlignCenter, f"{round(car.boost_amount*100)}")
 
 class QRSVWindow(QtWidgets.QMainWindow):
     _instance: "QRSVWindow" = None
