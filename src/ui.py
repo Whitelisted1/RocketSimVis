@@ -260,11 +260,15 @@ class QUIScoreWidget(QWidget):
         self.orange_score = 0
 
     def do_resize(self, screen_width: int, screen_height: int):
-        self.resize(400, 100)
+        WIDTH_RATIO = .16
+
+        width = max(screen_width * WIDTH_RATIO, 300)
+        self.resize(round(width), round(width / 4))
 
         # Round the widget
+        rounding = round(15 * (width / 400))
         path = QPainterPath()
-        path.addRoundedRect(QRectF(self.rect()), 15, 15)
+        path.addRoundedRect(QRectF(self.rect()), rounding, rounding)
         mask = QRegion(path.toFillPolygon().toPolygon())
         self.setMask(mask)
 
@@ -275,7 +279,7 @@ class QUIScoreWidget(QWidget):
 
         pen = QPen()
         pen.setWidth(4)
-        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, 32, 600))
+        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, round(32 * (self.width() / 400)), 600))
         painter.setPen(pen)
 
         score_width = round(self.width() / 4)
@@ -297,7 +301,7 @@ class QUIScoreWidget(QWidget):
         painter.drawText(rect, Qt.AlignCenter, "0")
 
         # Timer
-        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, 24, 400))
+        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, round(24 * (self.width() / 400)), 400))
         painter.setPen(QUIScoreWidget.TIMER_COLOR)
         painter.setBrush(QUIScoreWidget.TIMER_COLOR)
         rect = QRect(score_width, 0, score_width*2, self.height())
