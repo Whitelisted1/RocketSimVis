@@ -5,7 +5,7 @@ from typing import Optional
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSize, Qt, QTimer, QRect
-from PyQt5.QtGui import QPen, QColor
+from PyQt5.QtGui import QFont, QFontDatabase, QPen, QColor
 from PyQt5.Qt import QPainter, QWidget, pyqtSlot, QEvent
 
 from config import Config, ConfigVal
@@ -184,93 +184,67 @@ class QUIBoostWidget(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 
-        self.boost_amount = 0
-        self.display_boost = 0    
-
-        vbox = QtWidgets.QFormLayout()
-        self.text_label = QtWidgets.QLabel("...")
-        self.text_label.setStyleSheet("background: transparent; color: black;")
-        vbox.addWidget(self.text_label)
-        self.setLayout(vbox)
+        self.display_boosts: List[Optional[int]] = [0 for _ in range(len(global_state_manager.state.car_states))]
 
         self.repaint_timer = QTimer()
         self.repaint_timer.timeout.connect(self.update)
         self.repaint_timer.start(round(1000 / QUIBoostWidget.FRAME_RATE))
     
-    def update_boost(self, boost: Optional[int]):
-        if boost == self.boost_amount:
-            return
-        self.text_label.setText(str(boost))
-        self.boost_amount = boost
-    
-    def force_update_boost(self, boost: int):
-        self.text_label.setText(str(boost))
-        self.display_boost = boost
-        self.boost_amount = boost
-    
     def do_resize(self, screen_width: int, screen_height: int):
-        WIDTH_RATIO = .25
+        WIDTH_RATIO = .5
         MAX_WIDTH = 500
-        HEIGHT = 40
-        PADDING = 70
+        HEIGHT = 10 + len(global_state_manager.state.car_states) * 30
 
-        sizing = round(min(screen_width * WIDTH_RATIO, MAX_WIDTH)) + PADDING
-        self.resize(sizing, HEIGHT + PADDING)
+        sizing = round(min(screen_width * WIDTH_RATIO, MAX_WIDTH))
+        self.resize(sizing, HEIGHT)
     
     def update_display_boost(self):
-        if self.boost_amount is None:
-            return
+        for i in range(len(self.display_boosts)):
+            car = global_state_manager.state.car_states[i]
+            boost = math.ceil(car.boost_amount * 100)
 
-        spectating_car_index = QRSVWindow.get_instance().gl_widget.spectate_idx
-        if spectating_car_index == -1:
-            return
+            if boost != math.ceil(self.display_boosts[i]):
+                is_boosting = car.is_boosting
+                diff = boost - self.display_boosts[i]
 
+                # Assume car is boosting, display removing at a constant rate
+                if is_boosting:
+                    self.display_boosts[i] -= QUIBoostWidget.BOOST_USAGE_PER_FRAME
 
-        if self.boost_amount != math.ceil(self.display_boost):
-            is_boosting = global_state_manager.state.car_states[spectating_car_index].is_boosting
-            diff = self.boost_amount - self.display_boost
-
-            # Assume car is boosting, display removing at a constant rate
-            if is_boosting:
-                self.display_boost -= QUIBoostWidget.BOOST_USAGE_PER_FRAME
-
-            if diff > 0 or not is_boosting:
-                diff = diff / 5
-                self.display_boost += diff
-        
-        self.display_boost = min(max(self.display_boost, 0), 100)
-
+                if diff > 0 or not is_boosting:
+                    diff = diff / 5
+                    self.display_boosts[i] += diff
+            
+            self.display_boosts[i] = min(max(self.display_boosts[i], 0), 100)
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.eraseRect(self.rect())
         painter.setRenderHint(QPainter.Antialiasing)
 
-        if self.boost_amount is None:
-            return
         self.update_display_boost()
 
-        spectating_car_index = QRSVWindow.get_instance().gl_widget.spectate_idx
-        team = global_state_manager.state.car_states[spectating_car_index].team_num
-        color = QUIBoostWidget.BLUE_COLOR if team == 0 else QUIBoostWidget.ORANGE_COLOR
+        for i, car in enumerate(global_state_manager.state.car_states):
+            color = QUIBoostWidget.BLUE_COLOR if car.team_num == 0 else QUIBoostWidget.ORANGE_COLOR
 
-        pen = QPen(QColor(255, 255, 255))
-        pen.setWidth(4)
-        painter.setPen(pen)
-        painter.setBrush(QColor(255, 255, 255))
+            pen = QPen(QColor(255, 255, 255))
+            pen.setWidth(4)
+            painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, 10, 600))
+            painter.setPen(pen)
+            painter.setBrush(QColor(255, 255, 255))
 
-        rect = QRect(10, 10, self.width() - 20, 20)
-        painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
+            text_width = 30
 
-        painter.setBrush(color)
-        rect.setWidth(round(rect.width() * self.display_boost / 100))
-        painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
+            rect = QRect(30 + text_width, 10 + i * 30, self.width() - 40 - text_width, 20)
+            painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
 
-        # 1/16th of a degree
-        # start_angle = 0
-        # span_angle = int((self.boost_amount / 100) * 180 * 16)  # Half circle = 180 degrees
+            painter.setBrush(color)
+            rect.setWidth(round(rect.width() * self.display_boosts[i] / 100))
+            painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
 
-        # painter.drawArc(rect, start_angle, span_angle)
+            # Draw text centered on the full bar
+            painter.setPen(QColor(255, 255, 255))  # white text
+            painter.drawText(QRect(10, 10 + i * 30, text_width + 10, 20), Qt.AlignCenter, f"{round(car.boost_amount*100)}")
 
 class QRSVWindow(QtWidgets.QMainWindow):
     _instance: "QRSVWindow" = None
@@ -286,6 +260,9 @@ class QRSVWindow(QtWidgets.QMainWindow):
 
         path = Path(__file__).parent.resolve() / "qt_style_sheet.css"
         self.setStyleSheet(path.read_text())
+
+        font_id = QFontDatabase.addApplicationFont("./data/Orbitron/Orbitron-VariableFont_wght.ttf")
+        self.scoring_font = QFontDatabase.applicationFontFamilies(font_id)[0]
 
         # Set the central widget of the Window.
         self.gl_widget = gl_widget

@@ -561,15 +561,6 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
 
         ###########################################
 
-        boost = None
-        if self.spectate_idx > -1:
-            spectating_car = state.car_states[self.spectate_idx]
-            boost = math.ceil(spectating_car.boost_amount * 100)
-
-        ui.QRSVWindow.get_instance().boost_widget.update_boost(boost)
-
-        ###########################################
-
         self.prev_interp_ratio = interp_ratio
 
         ####################################################
@@ -582,7 +573,6 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
             self.spectate_idx += 1
             if self.spectate_idx >= self.spectate_count:
                 self.spectate_idx = -1
-            self.onSpectateChange()
 
     def keyPressEvent(self, event):
         # Switch to player closest to ball
@@ -598,15 +588,6 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
                         closest_dist = dist_to_ball
 
                 self.spectate_idx = closest_idx
-            self.onSpectateChange()
-
-    def onSpectateChange(self):
-        boost = None
-        if self.spectate_idx > -1:
-            spectating_car = global_state_manager.state.car_states[self.spectate_idx]
-            boost = math.ceil(spectating_car.boost_amount * 100)
-
-        ui.QRSVWindow.get_instance().boost_widget.force_update_boost(boost)
 
 g_socket_listener = None
 def run_socket_thread(port):
