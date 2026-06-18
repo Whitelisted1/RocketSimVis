@@ -1,19 +1,10 @@
-import os
+from typing import List
 import math
-import random
-import time
-
-import pyrr.vector3
 
 from const import *
 from shaders import *
-from ribbon import RibbonEmitter
 
-import numpy as np
-
-from pyrr import Quaternion, Matrix33, Matrix44, Vector3
-
-import json
+from pyrr import Quaternion, Matrix33, Vector3
 
 class PhysState:
     def __init__(self):
@@ -203,7 +194,7 @@ class RenderState:
 class GameState:
     def __init__(self):
         self.ball_state: PhysState = PhysState()
-        self.car_states = []
+        self.car_states: List[CarState] = []
 
         self.boost_pad_locations = []
         for t in default_boost_pad_locations:

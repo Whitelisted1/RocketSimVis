@@ -24,8 +24,6 @@ class SocketListener:
             except:
                 continue
 
-            has_received: True
-
             try:
                 j = json.loads(data.decode("utf-8"))
             except json.decoder.JSONDecodeError as err:

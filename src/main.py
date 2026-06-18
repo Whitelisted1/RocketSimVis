@@ -1,11 +1,9 @@
-import os
+from typing import List
+
 import math
-import random
 import threading
-import sys 
-import argparse
 import copy
-import struct
+import time
 
 from const import *
 from shaders import *
@@ -13,10 +11,8 @@ from arena_shaders import *
 from socket_listener import SocketListener
 from state_manager import *
 from ribbon import *
-from outline_renderer import OutlineRenderer
 import ui
-from ui import get_ui, QUIBarWidget, QRSVWindow
-from config import Config, ConfigVal
+from config import Config
 
 import moderngl
 import moderngl_window
@@ -25,26 +21,25 @@ from moderngl_window import resources
 from moderngl_window.meta import TextureDescription
 
 from PyQt5 import QtOpenGL, QtWidgets
-from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QScreen, QColor
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QScreen
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
 import numpy as np
 
-from pyrr import Quaternion, Matrix33, Matrix44, Vector3, Vector4
-
-import pywavefront
+from pyrr import Matrix44, Vector3, Vector4
 
 # TODO: Move
-def safe_normalize(vec: pyrr.Vector3):
+def safe_normalize(vec: Vector3):
     length = max(vec.length, 1e-6)
     return vec / length
 
 # TODO: Move game logic out of here
 class QRSVGLWidget(QtOpenGL.QGLWidget):
     def __init__(self, screen: QScreen):
+        self.screen = screen
 
         self.config = Config()
 
@@ -76,6 +71,8 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
         super(QRSVGLWidget, self).__init__(fmt, None)
 
         self.setMouseTracking(True)
+
+        QRSVGLWidget.instance = self
 
     def load_texture_2d(self, path: str) -> moderngl.Texture:
         return resources.textures.load(TextureDescription(path=path))
@@ -186,7 +183,7 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
             pos = Vector3(pos)
             forward = Vector3(forward)
             up = Vector3(up)
-            right = Vector3(pyrr.vector3.cross(forward, up))
+            right = Vector3(Vector3.cross(forward, up))
 
             forward *= scale
             right *= scale
@@ -231,7 +228,7 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
         ribbon_away_dir = safe_normalize(first_point.vel)
         ribbon_sideways_dir = ribbon_away_dir.cross(cam_to_ribbon_dir)
 
-        for point in ribbon.points: # type: RibbonPoint
+        for point in ribbon.points:
             if not point.connected:
                 continue
 
@@ -555,7 +552,21 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
         if state.recv_interval > 0:
             ui_text += "Network rate: {:.2f}fps".format(1 / state.recv_interval) + "\n"
         ui_text += "Ball speed: {:.2f}kph".format(state.ball_state.prev_vel.length * (9 / 250)) + "\n"
-        get_ui().set_text(ui_text)
+
+        car_states: List[CarState] = state.car_states
+        for car in car_states:
+            ui_text += str(car.team_num) + ": " + str(round(car.boost_amount * 100)) + "\n"
+
+        ui.QRSVWindow.get_instance().bar_widget.set_text(ui_text)
+
+        ###########################################
+
+        boost = None
+        if self.spectate_idx > -1:
+            spectating_car = state.car_states[self.spectate_idx]
+            boost = math.ceil(spectating_car.boost_amount * 100)
+
+        ui.QRSVWindow.get_instance().boost_widget.update_boost(boost)
 
         ###########################################
 
@@ -568,9 +579,10 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
             if self.spectate_count == 0:
                 return
 
-            self.spectate_idx += 1;
+            self.spectate_idx += 1
             if self.spectate_idx >= self.spectate_count:
                 self.spectate_idx = -1
+            self.onSpectateChange()
 
     def keyPressEvent(self, event):
         # Switch to player closest to ball
@@ -586,7 +598,15 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
                         closest_dist = dist_to_ball
 
                 self.spectate_idx = closest_idx
+            self.onSpectateChange()
 
+    def onSpectateChange(self):
+        boost = None
+        if self.spectate_idx > -1:
+            spectating_car = global_state_manager.state.car_states[self.spectate_idx]
+            boost = math.ceil(spectating_car.boost_amount * 100)
+
+        ui.QRSVWindow.get_instance().boost_widget.force_update_boost(boost)
 
 g_socket_listener = None
 def run_socket_thread(port):
@@ -609,7 +629,7 @@ def main():
     app = QtWidgets.QApplication([])
     ui.update_scaling_factor(app)
 
-    window = QRSVWindow(QRSVGLWidget(app.primaryScreen()))
+    window = ui.QRSVWindow(QRSVGLWidget(app.primaryScreen()))
     window.showNormal()
     app.exec_()
 

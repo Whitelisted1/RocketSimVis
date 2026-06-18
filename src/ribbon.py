@@ -1,7 +1,5 @@
 from collections import deque
 
-from pyrr import Vector3
-
 class RibbonPoint:
     def __init__(self, pos, vel):
         self.pos = pos
@@ -11,7 +9,7 @@ class RibbonPoint:
 
 class RibbonEmitter:
     def __init__(self):
-        self.points = deque()
+        self.points: deque[RibbonPoint] = deque()
         self.time_since_emit = 0
 
     def update(self, can_emit, emit_delay, emit_pos, emit_vel, lifetime, delta_time):
