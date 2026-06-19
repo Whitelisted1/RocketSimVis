@@ -445,13 +445,19 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
             )
 
             # Update and render ball ribbon
-            ball_speed_threshold = 1900
             ball_speed = ball_phys.get_vel(interp_ratio).length
             ribbon_alpha = 0.5
             ribbon_lifetime = 0.8
 
+            lower_ball_threshold = False
+            if len(self.ball_ribbon.points) != 0:
+                latest_point = self.ball_ribbon.points[0]
+                lower_ball_threshold = latest_point.time_active < 0.2
+
+            ball_speed_threshold = 2000 if not lower_ball_threshold else 1650
+
             self.ball_ribbon.update(
-                ball_speed > ball_speed_threshold and ball_pos.z > 250,
+                ball_speed > ball_speed_threshold and ball_pos.z > 300,
                 0,
                 ball_pos,
                 Vector3((100,0,0)),
