@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 import math
@@ -369,6 +370,8 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
                 global_state_manager.state.ball_state.rotate_with_ang_vel(delta_time)
 
             state = copy.deepcopy(global_state_manager.state)
+        
+        prev_state = self.prev_state
         self.prev_state = state
         self.spectate_count = len(state.car_states)
 
@@ -561,6 +564,13 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
             ui_text += str(car.team_num) + ": " + str(round(car.boost_amount * 100)) + "\n"
 
         ui.QRSVWindow.get_instance().bar_widget.set_text(ui_text)
+
+        ###########################################
+
+        ui.QRSVWindow.get_instance().score_widget.update()
+
+        if prev_state != None and prev_state.match_state.phase != state.match_state.phase:
+            print(f"Phase change: {prev_state.match_state.phase} -> {state.match_state.phase}")
 
         ###########################################
 

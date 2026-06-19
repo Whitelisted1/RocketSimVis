@@ -1,4 +1,5 @@
-from typing import List
+from enum import Enum
+from typing import List, Optional
 import math
 
 from const import *
@@ -144,6 +145,8 @@ class CarState:
         self.has_flipped_or_double_jumped: bool = False
         self.is_demoed: bool = False
 
+        self.name: Optional[str] = None
+
     def read_from_json(self, j):
         self.team_num = j["team_num"]
 
@@ -158,6 +161,7 @@ class CarState:
         if not (j.get("has_flipped_or_double_jumped") is None):
             self.has_flipped_or_double_jumped = j["has_flipped_or_double_jumped"]
         self.is_demoed = j["is_demoed"]
+        self.name = j["name"]
 
 # From RLGym
 default_boost_pad_locations = (
@@ -190,6 +194,23 @@ class RenderState:
 
                 self.lines.append([start, end])
 
+class MatchPhase(Enum):
+    KICKOFF = 0
+    PLAYING = 1
+    POST_GOAL = 2
+
+class MatchState:
+    def __init__(self):
+        self.seconds_remaining: int = 0
+        self.phase: MatchPhase = None
+        self.blue_score: int = 0
+        self.orange_score: int = 0
+
+    def read_from_json(self, j):
+        self.seconds_remaining = j["seconds_remaining"]
+        self.phase = MatchPhase(j["phase"])
+        self.blue_score = j["blue_score"]
+        self.orange_score = j["orange_score"]
 
 class GameState:
     def __init__(self):
@@ -206,12 +227,12 @@ class GameState:
 
         self.gamemode = None
         self.render_state = RenderState()
+        self.match_state = MatchState()
 
     def is_boost_big(self, idx):
         return self.boost_pad_locations[idx].z == 73
 
     def read_from_json(self, j):
-
         self.ball_state.read_from_json(j["ball_phys"])
 
         j_cars = j["cars"]
@@ -249,3 +270,6 @@ class GameState:
         self.render_state = RenderState()
         if not (j.get("render") is None):
             self.render_state.read_from_json(j["render"])
+        
+        if not (j.get("match_state") is None):
+            self.match_state.read_from_json(j["match_state"])

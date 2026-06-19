@@ -272,7 +272,7 @@ class QUIScoreWidget(QWidget):
         path.addRoundedRect(QRectF(self.rect()), rounding, rounding)
         mask = QRegion(path.toFillPolygon().toPolygon())
         self.setMask(mask)
-
+    
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.eraseRect(self.rect())
@@ -291,7 +291,7 @@ class QUIScoreWidget(QWidget):
         rect = QRect(0, 0, score_width, self.height())
         painter.drawRect(rect)
         painter.setPen(QUIScoreWidget.BLUE_TEXT_COLOR)
-        painter.drawText(rect, Qt.AlignCenter, "0")
+        painter.drawText(rect, Qt.AlignCenter, str(global_state_manager.state.match_state.blue_score))
 
         # Orange score
         painter.setPen(QUIScoreWidget.ORANGE_BACKGROUND_COLOR)
@@ -299,14 +299,19 @@ class QUIScoreWidget(QWidget):
         rect = QRect(score_width*3, 0, score_width, self.height())
         painter.drawRect(rect)
         painter.setPen(QUIScoreWidget.ORANGE_TEXT_COLOR)
-        painter.drawText(rect, Qt.AlignCenter, "0")
+        painter.drawText(rect, Qt.AlignCenter, str(global_state_manager.state.match_state.orange_score))
+
+        def formatTime(seconds: int):
+            minutes = seconds // 60
+            seconds -= minutes * 60
+            return f"{minutes}:{"0" if seconds < 10 else ""}{seconds}"
 
         # Timer
         painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, round(25 * (self.width() / 400)), 400))
         painter.setPen(QUIScoreWidget.TIMER_COLOR)
         painter.setBrush(QUIScoreWidget.TIMER_COLOR)
         rect = QRect(score_width, 0, score_width*2, self.height())
-        painter.drawText(rect, Qt.AlignCenter, "5:00")
+        painter.drawText(rect, Qt.AlignCenter, formatTime(global_state_manager.state.match_state.seconds_remaining))
 
 class QRSVWindow(QtWidgets.QMainWindow):
     _instance: "QRSVWindow" = None
