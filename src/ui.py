@@ -238,9 +238,10 @@ class QUIBoostWidget(QWidget):
             rect = QRect(text_width, 10 + i * 30, self.width() - text_width - 10, 20)
             painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
 
-            painter.setBrush(color)
-            rect.setWidth(round(rect.width() * self.display_boosts[i] / 100))
-            painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
+            if self.display_boosts[i] != 0:
+                painter.setBrush(color)
+                rect.setWidth(round(rect.width() * self.display_boosts[i] / 100))
+                painter.drawRoundedRect(rect, 5, 5, mode=Qt.AbsoluteSize)
 
             painter.setPen(QColor(255, 255, 255))
             painter.drawText(QRect(0, 10 + i * 30, text_width, 20), Qt.AlignCenter, f"{round(car.boost_amount*100)}")
@@ -301,7 +302,7 @@ class QUIScoreWidget(QWidget):
         painter.drawText(rect, Qt.AlignCenter, "0")
 
         # Timer
-        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, round(24 * (self.width() / 400)), 400))
+        painter.setFont(QFont(QRSVWindow.get_instance().scoring_font, round(25 * (self.width() / 400)), 400))
         painter.setPen(QUIScoreWidget.TIMER_COLOR)
         painter.setBrush(QUIScoreWidget.TIMER_COLOR)
         rect = QRect(score_width, 0, score_width*2, self.height())
