@@ -441,32 +441,32 @@ class QRSVGLWidget(QtOpenGL.QGLWidget):
                 #outline_color = Vector4((1, 1, 1, 1))
             )
 
-            if state.gamemode == "heatseeker": # Update and render ball ribbon
-                ball_speed = ball_phys.get_vel(interp_ratio).length
-                speed_frac = (max(0, min(1, ball_speed / 2800)) ** 2)
-                ribbon_alpha = 0.75
-                ribbon_lifetime = 0.8
+            # Update and render ball ribbon
+            ball_speed_threshold = 1900
+            ball_speed = ball_phys.get_vel(interp_ratio).length
+            ribbon_alpha = 0.5
+            ribbon_lifetime = 0.8
 
-                self.ball_ribbon.update(
-                    ball_speed > 600,
-                    0,
-                    ball_pos,
-                    Vector3((100,0,0)),
-                    ribbon_lifetime,
-                    delta_time
-                )
+            self.ball_ribbon.update(
+                ball_speed > ball_speed_threshold and ball_pos.z > 250,
+                0,
+                ball_pos,
+                Vector3((100,0,0)),
+                ribbon_lifetime,
+                delta_time
+            )
 
-                if ball_phys.is_teleporting():
-                    self.ball_ribbon.points.clear()
+            if ball_phys.is_teleporting():
+                self.ball_ribbon.points.clear()
 
-                self.render_ribbon(
-                    self.ball_ribbon,
-                    camera_pos,
-                    ribbon_lifetime,
-                    width=50,
-                    start_taper_time=ribbon_lifetime / 10,
-                    color=Vector4((1, 1, 1, ribbon_alpha))
-                )
+            self.render_ribbon(
+                self.ball_ribbon,
+                camera_pos,
+                ribbon_lifetime,
+                width=50,
+                start_taper_time=ribbon_lifetime / 10,
+                color=Vector4((1, 1, 1, ribbon_alpha))
+            )
 
         if True: # Render cars
             for i in range(len(state.car_states)):
