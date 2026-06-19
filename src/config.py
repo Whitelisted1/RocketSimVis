@@ -9,7 +9,7 @@ class ConfigVal:
 
 class Config:
     def __init__(self):
-        self.camera_distance = ConfigVal(300, 100, 500)
+        self.camera_distance = ConfigVal(350, 100, 500)
         self.camera_height = ConfigVal(120, 0, 300)
         self.camera_fov = ConfigVal(75, 20, 120)
         self.camera_bird_fov = ConfigVal(60, 20, 120)
